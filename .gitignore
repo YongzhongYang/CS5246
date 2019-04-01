@@ -1,4 +1,7 @@
 # Byte-compiled / optimized / DLL files
+
+./ABSA-PyTorch/__pycache__
+./ABSA-PyTorch/state_dict
 __pycache__/
 *.py[cod]
 *$py.class
