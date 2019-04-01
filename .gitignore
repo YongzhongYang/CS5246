@@ -2,6 +2,7 @@
 
 ./ABSA-PyTorch/__pycache__
 ./ABSA-PyTorch/state_dict
+./ABSA-PyTorch/*_logs
 __pycache__/
 *.py[cod]
 *$py.class
