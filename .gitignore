@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+ABSA-PyTorch/justin_logs
+ABSA-PyTorch/twitter_tokenizer.dat
 .idea
 ./ABSA-PyTorch/state_dict
 __pycache__/
