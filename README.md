@@ -5,6 +5,9 @@ This is the repo to document the group project for NUS CS5246
 # SentimentAnalysis-BERT
 This repo is developed from: https://github.com/huggingface/pytorch-pretrained-BERT
 
+The model structure for sentence classification could be found in: https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/pytorch_pretrained_bert/modeling.py
+Bertforsequenceclassification
+
 Benchmark Model could be run with the following code:
 ```shell
 export GLUE_DIR=/SST-2
