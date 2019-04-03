@@ -1,8 +1,10 @@
 # Byte-compiled / optimized / DLL files
+glue_data/
 ABSA-PyTorch/justin_logs
 ABSA-PyTorch/twitter_tokenizer.dat
 .idea
 ./ABSA-PyTorch/state_dict
+./ABSA-PyTorch/.idea
 __pycache__/
 *.py[cod]
 *$py.class

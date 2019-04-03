@@ -747,6 +747,10 @@ def main():
     model = BertForSequenceClassification.from_pretrained(args.bert_model,
               cache_dir=cache_dir,
               num_labels=num_labels)
+    #TODO: print out the trainable parameters
+    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('total trainbale params {}'.format(total_trainable_params))
+
     if args.fp16:
         model.half()
     model.to(device)
