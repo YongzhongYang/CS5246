@@ -2,6 +2,9 @@
 
 This is the repo to document the group project for NUS CS5246
 
+The standard dataset of choice is Stanford Sentiment Treebank 2:
+GLUE data benchmark performance:https://gluebenchmark.com/leaderboard
+
 # SentimentAnalysis-BERT
 This repo is developed from: https://github.com/huggingface/pytorch-pretrained-BERT
 
