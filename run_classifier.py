@@ -836,8 +836,9 @@ def main():
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
 
-        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
         # TODO: need to create lstm training data here
+        lstm_train_feas = torch.tensor([item.text_a for item in train_examples])
+        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
@@ -850,11 +851,11 @@ def main():
             nb_tr_examples, nb_tr_steps = 0, 0
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 batch = tuple(t.to(device) for t in batch)
-                input_ids, input_mask, segment_ids, label_ids = batch
+                input_ids, input_mask, segment_ids, label_ids, lstm_train_sent = batch
 
-                # TODO: need to add lstm input here
                 # define a new function to compute loss values for both output_modes
-                logits = model(input_ids, segment_ids, input_mask, labels=None)
+                # logits = model(input_ids, segment_ids, input_mask, labels=None)
+                logits = model(((input_ids, segment_ids),lstm_train_feas))
 
                 if output_mode == "classification":
                     loss_fct = CrossEntropyLoss()

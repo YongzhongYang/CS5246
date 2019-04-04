@@ -26,6 +26,7 @@ class BERT_BiLSTM(nn.Module):
         # LSTM layers
         self.use_gpu = lstm_opt['use_gpu']
         self.batch_size = lstm_opt['batch_size']
+        self.hidden_dim = lstm_opt['hidden_dim']
         self.lstm_dropout = lstm_opt['dropout']
         text_fields, label_fields = self.load_embeddings(lstm_opt)
         self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
@@ -52,7 +53,8 @@ class BERT_BiLSTM(nn.Module):
     def init_hidden(self):
         # first is the hidden h
         # second is the cell c
-        if self.use_gpu:
+        #TODO: remove the not here
+        if not self.use_gpu:
             return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
                     Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
         else:
