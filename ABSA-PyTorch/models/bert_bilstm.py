@@ -27,9 +27,9 @@ class BERT_BiLSTM(nn.Module):
         self.use_gpu = lstm_opt['use_gpu']
         self.batch_size = lstm_opt['batch_size']
         self.lstm_dropout = lstm_opt['dropout']
-        vectors = self.load_embeddings(lstm_opt)
-        self.embeddings = nn.Embedding(lstm_opt['vocab_size'], lstm_opt['embedding_dim'])
-        self.bilstm = nn.LSTM(input_size=lstm_opt['embedding_dim'],
+        text_fields, label_fields = self.load_embeddings(lstm_opt)
+        self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
+        self.bilstm = nn.LSTM(input_size=text_fields.vocab.vectors.size()[1],
                               hidden_size=lstm_opt['hidden_dim'], bidirectional=True)
         self.hidden = self.init_hidden()
 
@@ -38,12 +38,16 @@ class BERT_BiLSTM(nn.Module):
 
     def load_embeddings(self, lstm_opt):
         text_field = data.Field(lower=True)
-        train_path = lstm_opt['data_base'] + "train.tsv"
-        test_path= lstm_opt['data_base'] + "test.tsv"
-        dev_path = lstm_opt['data_base'] + "dev.tsv"
-        text_field.build_vocab(train_path, test_path, dev_path)
+        label_field = data.Field(sequential=False)
+        train, dev, test = data.TabularDataset.splits(path=lstm_opt['data_base'],
+                                                      train="train.tsv",
+                                                      validation="dev.tsv",
+                                                      test="test.tsv",
+                                                      format="tsv",
+                                                      fields=[('text', text_field), ('label', label_field)])
+        text_field.build_vocab(train, test, dev)
         text_field.vocab.load_vectors(lstm_opt['embedding_type'])
-        return text_field.vocab.vectors
+        return text_field, label_field
 
     def init_hidden(self):
         # first is the hidden h

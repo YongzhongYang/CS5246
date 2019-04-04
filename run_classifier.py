@@ -692,10 +692,11 @@ def main():
 
     lstm_opt = {
         "batch_size": args.train_batch_size,
+        "hidden_dim": 150,
         "dropout": 0.2,
         "embedding_type": "glove.6B.300d",
         "embedding_path": "../embeddings/glove.840B.300d.zip",
-        "data_base": "../glue_data/SST-2/"
+        "data_base": os.getcwd() + "/glue_data/SST-2/"
     }
 
     bert_opt = {
