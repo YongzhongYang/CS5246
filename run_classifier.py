@@ -40,6 +40,8 @@ from pytorch_pretrained_bert.modeling import BertForSequenceClassification, Bert
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 
+from models.bert_bilstm import BERT_BiLSTM
+
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
@@ -688,6 +690,21 @@ def main():
         "wnli": "classification",
     }
 
+    lstm_opt = {
+        "batch_size": args.train_batch_size,
+        "dropout": 0.2,
+        "embedding_type": "glove.6B.300d",
+        "embedding_path": "../embeddings/glove.840B.300d.zip",
+        "data_base": "../glue_data/SST-2/"
+    }
+
+    bert_opt = {
+        "dropout": 0.1,
+        "variant": 'bert-base-uncased',
+        "bert_dim": 768,
+        "polarities_dim": 2
+    }
+
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
         n_gpu = torch.cuda.device_count()
@@ -705,7 +722,6 @@ def main():
                             args.gradient_accumulation_steps))
 
     args.train_batch_size = args.train_batch_size // args.gradient_accumulation_steps
-
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -744,9 +760,16 @@ def main():
 
     # Prepare model
     cache_dir = args.cache_dir if args.cache_dir else os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
-    model = BertForSequenceClassification.from_pretrained(args.bert_model,
-              cache_dir=cache_dir,
-              num_labels=num_labels)
+    #TODO: need to update this model
+    # model = BertForSequenceClassification.from_pretrained(args.bert_model,
+    #           cache_dir=cache_dir,
+    #           num_labels=num_labels)
+
+    lstm_opt["batch_size"] = args.train_batch_size
+    lstm_opt["use_gpu"] = device != "cpu"
+    # lstm_opt['vocab_size'] =
+    model = BERT_BiLSTM(lstm_opt, bert_opt)
+
     #TODO: print out the trainable parameters
     total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('total trainbale params {}'.format(total_trainable_params))
@@ -813,6 +836,7 @@ def main():
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
 
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+        # TODO: need to create lstm training data here
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
@@ -827,6 +851,7 @@ def main():
                 batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids = batch
 
+                # TODO: need to add lstm input here
                 # define a new function to compute loss values for both output_modes
                 logits = model(input_ids, segment_ids, input_mask, labels=None)
 

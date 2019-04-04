@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+.vector_cache/
+embeddings/
 glue_data/
 ABSA-PyTorch/justin_logs
 ABSA-PyTorch/twitter_tokenizer.dat

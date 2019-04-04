@@ -15,9 +15,9 @@ class BERT_SP(nn.Module):
         super(BERT_SP, self).__init__()
         # self.squeeze_embedding = SqueezeEmbedding()
         self.bert = BertModel.from_pretrained(variant)
-        # disable BERT parameter learning
-        for param in self.bert.parameters():
-            param.requires_grad = False
+        # # disable BERT parameter learning
+        # for param in self.bert.parameters():
+        #     param.requires_grad = False
         self.dropout = nn.Dropout(opt.dropout)
         self.dense = nn.Linear(opt.bert_dim, opt.polarities_dim)
 
