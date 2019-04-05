@@ -837,7 +837,7 @@ def main():
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
-
+        all_label_ids = all_label_ids.to(device)
         # TODO: need to convert lstm data to indices tensor
         lstm_train_feas = [item.text_a for item in train_examples]
         all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
@@ -863,7 +863,6 @@ def main():
                 # logits = model(input_ids, segment_ids, input_mask, labels=None)
                 # TODO: need to get the input from text_field
                 logits = model(((input_ids, segment_ids),lstm_train_tensor))
-
                 if output_mode == "classification":
                     loss_fct = CrossEntropyLoss()
                     loss = loss_fct(logits.view(-1, num_labels), label_ids.view(-1))
@@ -927,7 +926,7 @@ def main():
             all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.float)
-
+        all_label_ids = all_label_ids.to(device)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
