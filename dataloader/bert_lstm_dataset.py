@@ -42,4 +42,4 @@ def sample_data(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, l
     total_len = len(lstm_train_sent)
     samples_len = total_len // 10
     idx = np.random.choice(np.arange(total_len), samples_len, replace=False)
-    return all_input_ids[idx], all_input_mask[idx], all_segment_ids[idx], all_label_ids[idx], lstm_train_sent[idx]
+    return all_input_ids[idx], all_input_mask[idx], all_segment_ids[idx], all_label_ids[idx], np.array(lstm_train_sent)[idx]
