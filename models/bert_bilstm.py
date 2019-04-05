@@ -8,7 +8,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 
-from layers.squeeze_embedding import SqueezeEmbedding
+# from layers.squeeze_embedding import SqueezeEmbedding
 from pytorch_pretrained_bert import BertModel, BertForSequenceClassification, BertForNextSentencePrediction, \
     BertForPreTraining
 
