@@ -36,14 +36,13 @@ class BERT_BiLSTM(nn.Module):
 
         # Linear layers
         self.dense = nn.Linear(bert_opt["bert_dim"] + lstm_opt['hidden_dim'] * 2, bert_opt["polarities_dim"])
-
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
     def init_hidden(self):
         # first is the hidden h
         # second is the cell c
-        #TODO: remove the not here
-        if not self.use_gpu:
+        if self.use_gpu:
             return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
                     Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
         else:
@@ -52,8 +51,10 @@ class BERT_BiLSTM(nn.Module):
 
     def forward(self, inputs):
         bert_inputs, lstm_inputs = inputs
-
         text_bert_indices, bert_segments_ids = bert_inputs[0], bert_inputs[1]
+        text_bert_indices = text_bert_indices.to(self.device)
+        bert_segments_ids = bert_segments_ids.to(self.device)
+        lstm_inputs = bert_segments_ids.to(self.device)
         _, pooled_output = self.bert(text_bert_indices, bert_segments_ids, output_all_encoded_layers=False)
         pooled_output = self.bert_dropout(pooled_output)
 
