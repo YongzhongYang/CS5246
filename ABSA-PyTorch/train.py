@@ -30,9 +30,7 @@ class Instructor:
             # for param in bert.parameters():
             #     param.requires_grad = False
             self.model = opt.model_class(bert, opt).to(opt.device)
-            BertForSequenceClassification.from_pretrained()
-            BertForNextSentencePrediction.from_pretrained()
-            BertForPreTraining
+            print(sum(p.numel() for p in self.model.parameters() if p.requires_grad))
         else:
             tokenizer = build_tokenizer(
                 fnames=[opt.dataset_file['train'], opt.dataset_file['test']],
