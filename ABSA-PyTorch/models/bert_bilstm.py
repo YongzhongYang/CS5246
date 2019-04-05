@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-from torchtext import data
 
 
 from layers.squeeze_embedding import SqueezeEmbedding
@@ -28,7 +27,8 @@ class BERT_BiLSTM(nn.Module):
         self.batch_size = lstm_opt['batch_size']
         self.hidden_dim = lstm_opt['hidden_dim']
         self.lstm_dropout = lstm_opt['dropout']
-        text_fields, label_fields = self.load_embeddings(lstm_opt)
+        # text_fields, label_fields = self.load_embeddings(lstm_opt)
+        text_fields, label_fields = lstm_opt['text_fields'], lstm_opt['label_fields']
         self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
         self.bilstm = nn.LSTM(input_size=text_fields.vocab.vectors.size()[1],
                               hidden_size=lstm_opt['hidden_dim'], bidirectional=True)
@@ -37,18 +37,7 @@ class BERT_BiLSTM(nn.Module):
         # Linear layers
         self.dense = nn.Linear(bert_opt["bert_dim"] + lstm_opt['hidden_dim'] * 2, bert_opt["polarities_dim"])
 
-    def load_embeddings(self, lstm_opt):
-        text_field = data.Field(lower=True)
-        label_field = data.Field(sequential=False)
-        train, dev, test = data.TabularDataset.splits(path=lstm_opt['data_base'],
-                                                      train="train.tsv",
-                                                      validation="dev.tsv",
-                                                      test="test.tsv",
-                                                      format="tsv",
-                                                      fields=[('text', text_field), ('label', label_field)])
-        text_field.build_vocab(train, test, dev)
-        text_field.vocab.load_vectors(lstm_opt['embedding_type'])
-        return text_field, label_field
+
 
     def init_hidden(self):
         # first is the hidden h
@@ -69,8 +58,8 @@ class BERT_BiLSTM(nn.Module):
         pooled_output = self.bert_dropout(pooled_output)
 
         lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
-        lstm_y, self.hidden = self.lstm(lstm_x, self.hidden)
+        lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
 
-        y = self.dense(torch.cat((pooled_output, lstm_y[-1])))
+        y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
         log_probs = F.log_softmax(y)
         return log_probs

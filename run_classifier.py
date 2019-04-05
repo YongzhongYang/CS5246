@@ -40,6 +40,7 @@ from pytorch_pretrained_bert.modeling import BertForSequenceClassification, Bert
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 
+from dataloader.bert_lstm_dataset import BertLstmDataset, load_embeddings
 from models.bert_bilstm import BERT_BiLSTM
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -768,7 +769,8 @@ def main():
 
     lstm_opt["batch_size"] = args.train_batch_size
     lstm_opt["use_gpu"] = device != "cpu"
-    # lstm_opt['vocab_size'] =
+    lstm_opt["max_len"] = args.max_seq_length
+    lstm_opt['text_fields'], lstm_opt['label_fields'] = load_embeddings(lstm_opt)
     model = BERT_BiLSTM(lstm_opt, bert_opt)
 
     #TODO: print out the trainable parameters
@@ -836,9 +838,9 @@ def main():
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
 
-        # TODO: need to create lstm training data here
-        lstm_train_feas = torch.tensor([item.text_a for item in train_examples])
-        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
+        # TODO: need to convert lstm data to indices tensor
+        lstm_train_feas = [item.text_a for item in train_examples]
+        train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
@@ -850,12 +852,15 @@ def main():
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
-                batch = tuple(t.to(device) for t in batch)
+                # batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids, lstm_train_sent = batch
+                text_fields = lstm_opt['text_fields']
+                lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
 
                 # define a new function to compute loss values for both output_modes
                 # logits = model(input_ids, segment_ids, input_mask, labels=None)
-                logits = model(((input_ids, segment_ids),lstm_train_feas))
+                # TODO: need to get the input from text_field
+                logits = model(((input_ids, segment_ids),lstm_train_tensor))
 
                 if output_mode == "classification":
                     loss_fct = CrossEntropyLoss()
