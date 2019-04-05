@@ -42,19 +42,21 @@ class BERT_BiLSTM(nn.Module):
     def init_hidden(self):
         # first is the hidden h
         # second is the cell c
-        if self.use_gpu:
-            return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
-                    Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
-        else:
-            return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim)),
-                    Variable(torch.zeros(2, self.batch_size, self.hidden_dim)))
+        # if self.use_gpu:
+        #     return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
+        #             Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
+        # else:
+        #     return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim)),
+        #             Variable(torch.zeros(2, self.batch_size, self.hidden_dim)))
+        return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim)),
+                Variable(torch.zeros(2, self.batch_size, self.hidden_dim)))
 
     def forward(self, inputs):
         bert_inputs, lstm_inputs = inputs
         text_bert_indices, bert_segments_ids = bert_inputs[0], bert_inputs[1]
         text_bert_indices = text_bert_indices.to(self.device)
         bert_segments_ids = bert_segments_ids.to(self.device)
-        lstm_inputs = bert_segments_ids.to(self.device)
+        lstm_inputs = lstm_inputs.to(self.device)
         _, pooled_output = self.bert(text_bert_indices, bert_segments_ids, output_all_encoded_layers=False)
         pooled_output = self.bert_dropout(pooled_output)
 
