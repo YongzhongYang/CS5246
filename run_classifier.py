@@ -40,7 +40,7 @@ from pytorch_pretrained_bert.modeling import BertForSequenceClassification, Bert
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 
-from dataloader.bert_lstm_dataset import BertLstmDataset, load_embeddings
+from dataloader.bert_lstm_dataset import BertLstmDataset, load_embeddings, sample_data
 from models.bert_bilstm import BERT_BiLSTM
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -840,6 +840,8 @@ def main():
 
         # TODO: need to convert lstm data to indices tensor
         lstm_train_feas = [item.text_a for item in train_examples]
+        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
+            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
@@ -882,6 +884,7 @@ def main():
                 tr_loss += loss.item()
                 nb_tr_examples += input_ids.size(0)
                 nb_tr_steps += 1
+                print('global step {}, loss {}'.format(global_step, loss.data))
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     if args.fp16:
                         # modify learning rate with special warm up BERT uses
