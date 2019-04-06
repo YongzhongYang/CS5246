@@ -917,7 +917,7 @@ def main():
         # test_examples = processor.get_test_examples(args.data_dir)
         eval_examples = processor.get_dev_examples(args.data_dir)
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-             task_name, eva_examples)
+             task_name, eval_examples, max_eval_acc)
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
         # model = BertForSequenceClassification(config, num_labels=num_labels)
