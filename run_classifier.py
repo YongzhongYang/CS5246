@@ -227,6 +227,10 @@ class Sst2Processor(DataProcessor):
         return self._create_examples(
             self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
+    def get_test_examples(self, data_dir):
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "test.tsv")), "test")
+
     def get_labels(self):
         """See base class."""
         return ["0", "1"]
@@ -892,8 +896,9 @@ def main():
                     optimizer.zero_grad()
                     global_step += 1
                 if global_step % 50 == 0 and global_step > 0:
+                    eval_examples = processor.get_dev_examples(args.data_dir)
                     eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-                         task_name)
+                         task_name, eval_examples)
                     model.train()
 
         # Save a trained model and the associated configuration
@@ -908,8 +913,9 @@ def main():
         with open(output_config_file, 'w') as f:
             f.write(json.dumps(config))
             # f.write(model_to_save.config.to_json_string())
+        test_examples = processor.get_test_examples(args.data_dir)
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-             task_name)
+             task_name, test_examples)
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
         # model = BertForSequenceClassification(config, num_labels=num_labels)
@@ -927,15 +933,15 @@ def main():
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
 
 
-def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name):
-    eval_examples = processor.get_dev_examples(args.data_dir)
-    remainder = len(eval_examples) % args.train_batch_size
-    eval_examples = eval_examples[: -remainder]
-    lstm_eval_feas = [item.text_a for item in eval_examples]
+def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name, examples):
+    examples = processor.get_dev_examples(args.data_dir)
+    remainder = len(examples) % args.train_batch_size
+    examples = examples[: -remainder]
+    lstm_eval_feas = [item.text_a for item in examples]
     eval_features = convert_examples_to_features(
-        eval_examples, label_list, args.max_seq_length, tokenizer, output_mode)
+        examples, label_list, args.max_seq_length, tokenizer, output_mode)
     logger.info("***** Running evaluation *****")
-    logger.info("  Num examples = %d", len(eval_examples))
+    logger.info("  Num examples = %d", len(examples))
     logger.info("  Batch size = %d", args.eval_batch_size)
     all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
     all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
