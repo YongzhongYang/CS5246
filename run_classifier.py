@@ -834,7 +834,7 @@ def main():
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
-
+        all_label_ids = all_label_ids.to(device)
         lstm_train_feas = [item.text_a for item in train_examples]
         all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
             all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
@@ -859,7 +859,6 @@ def main():
                 # define a new function to compute loss values for both output_modes
                 # logits = model(input_ids, segment_ids, input_mask, labels=None)
                 logits = model(((input_ids, segment_ids),lstm_train_tensor))
-
                 if output_mode == "classification":
                     loss_fct = CrossEntropyLoss()
                     loss = loss_fct(logits.view(-1, num_labels), label_ids.view(-1))

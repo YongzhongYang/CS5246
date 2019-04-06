@@ -40,14 +40,12 @@ class BERT_BiLSTM(nn.Module):
     def init_hidden(self):
         # first is the hidden h
         # second is the cell c
-        # if self.use_gpu:
-        #     return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
-        #             Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
-        # else:
-        #     return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim)),
-        #             Variable(torch.zeros(2, self.batch_size, self.hidden_dim)))
-        return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim)),
-                Variable(torch.zeros(2, self.batch_size, self.hidden_dim)))
+        if self.use_gpu:
+             return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
+                     Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
+        else:
+             return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim)),
+                     Variable(torch.zeros(2, self.batch_size, self.hidden_dim)))
 
     def forward(self, inputs):
         bert_inputs, lstm_inputs = inputs
@@ -63,4 +61,11 @@ class BERT_BiLSTM(nn.Module):
 
         y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
         log_probs = F.log_softmax(y)
+        del text_bert_indices
+        del bert_segments_ids
+        del lstm_inputs
+        del pooled_output
+        del lstm_x
+        del lstm_y
+        del y
         return log_probs
