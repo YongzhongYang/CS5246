@@ -35,7 +35,7 @@ class BERT_BiLSTM(nn.Module):
         self.hidden = self.init_hidden()
 
         # Linear layers
-        self.dense = nn.Linear(bert_opt["bert_dim"] + lstm_opt['hidden_dim'] * 2, bert_opt["polarities_dim"])
+        self.dense = nn.Linear(bert_opt["bert_dim"], bert_opt["polarities_dim"])
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -63,6 +63,7 @@ class BERT_BiLSTM(nn.Module):
         lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
         lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
 
-        y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
+        # y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
+        y = self.dense(torch.max(torch.stack([pooled_output, lstm_y[-1]]), dim=0))
         log_probs = F.log_softmax(y)
         return log_probs

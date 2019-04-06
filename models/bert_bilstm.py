@@ -62,7 +62,7 @@ class BERT_BiLSTM(nn.Module):
         lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
 
         # y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
-        y = self.dense(torch.mean(torch.stack([pooled_output, lstm_y[-1]]), dim=0))
+        y = self.dense(torch.max(torch.stack([pooled_output, lstm_y[-1]]), dim=0))
         log_probs = F.log_softmax(y)
         del text_bert_indices
         del bert_segments_ids
