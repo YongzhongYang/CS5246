@@ -760,7 +760,6 @@ def main():
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps) * args.num_train_epochs
         if args.local_rank != -1:
             num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
-
     # Prepare model
     cache_dir = args.cache_dir if args.cache_dir else os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
     # model = BertForSequenceClassification.from_pretrained(args.bert_model,
@@ -820,6 +819,8 @@ def main():
     tr_loss = 0
     args.eval_batch_size = args.train_batch_size
     if args.do_train:
+        remainder = len(train_examples) % args.train_batch_size
+        train_examples = train_examples[:-remainder]
         train_features = convert_examples_to_features(
             train_examples, label_list, args.max_seq_length, tokenizer, output_mode)
         logger.info("***** Running training *****")
@@ -836,8 +837,8 @@ def main():
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
         all_label_ids = all_label_ids.to(device)
         lstm_train_feas = [item.text_a for item in train_examples]
-        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
-            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
+#        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
+#            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
@@ -890,9 +891,10 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
-                if global_step % 1 == 0 and global_step > 0:
+                if global_step % 50 == 0 and global_step > 0:
                     eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
                          task_name)
+                    model.train()
 
         # Save a trained model and the associated configuration
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
