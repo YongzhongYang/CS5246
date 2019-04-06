@@ -40,6 +40,7 @@ class BERT_BiLSTM(nn.Module):
     def init_hidden(self):
         # first is the hidden h
         # second is the cell c
+        # TODO: need to remove batch
         if self.use_gpu:
              return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
                      Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
@@ -56,6 +57,7 @@ class BERT_BiLSTM(nn.Module):
         _, pooled_output = self.bert(text_bert_indices, bert_segments_ids, output_all_encoded_layers=False)
         pooled_output = self.bert_dropout(pooled_output)
 
+        # TODO: need to remove batch
         lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
         lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
 

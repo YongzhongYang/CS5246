@@ -844,6 +844,7 @@ def main():
         lstm_train_feas = [item.text_a for item in train_examples]
 #        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
 #            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
+        #TODO: move the embedding from lstm model to cpu
         train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
