@@ -913,9 +913,10 @@ def main():
         with open(output_config_file, 'w') as f:
             f.write(json.dumps(config))
             # f.write(model_to_save.config.to_json_string())
-        test_examples = processor.get_test_examples(args.data_dir)
+        # test_examples = processor.get_test_examples(args.data_dir)
+        eval_examples = processor.get_dev_examples(args.data_dir)
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-             task_name, test_examples)
+             task_name, eva_examples)
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
         # model = BertForSequenceClassification(config, num_labels=num_labels)
