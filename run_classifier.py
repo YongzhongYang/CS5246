@@ -821,6 +821,7 @@ def main():
     global_step = 0
     nb_tr_steps = 0
     tr_loss = 0
+    max_eval_acc = 0
     args.eval_batch_size = args.train_batch_size
     if args.do_train:
         remainder = len(train_examples) % args.train_batch_size
@@ -897,8 +898,8 @@ def main():
                     global_step += 1
                 if global_step % 50 == 0 and global_step > 0:
                     eval_examples = processor.get_dev_examples(args.data_dir)
-                    eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-                         task_name, eval_examples)
+                    max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
+                         task_name, eval_examples, max_eval_acc)
                     model.train()
 
         # Save a trained model and the associated configuration
@@ -934,8 +935,8 @@ def main():
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
 
 
-def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name, examples):
-    examples = processor.get_dev_examples(args.data_dir)
+def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
+         examples, max_eval_acc):
     remainder = len(examples) % args.train_batch_size
     examples = examples[: -remainder]
     lstm_eval_feas = [item.text_a for item in examples]
@@ -1000,13 +1001,10 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
     result['eval_loss'] = eval_loss
     # result['global_step'] = global_step
     # result['loss'] = loss
-    print('evaluation loss is {}'.format(result['acc']))
-    output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
-    with open(output_eval_file, "w") as writer:
-        logger.info("***** Eval results *****")
-        for key in sorted(result.keys()):
-            logger.info("  %s = %s", key, str(result[key]))
-            writer.write("%s = %s\n" % (key, str(result[key])))
+    logger.info("***** Eval results *****")
+    for key in sorted(result.keys()):
+        logger.info("  %s = %s", key, str(result[key]))
+    return max_eval_acc if max_eval_acc >= result['acc'] else result['acc']
 
 
 if __name__ == "__main__":
