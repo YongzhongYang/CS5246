@@ -698,7 +698,7 @@ def main():
 
     lstm_opt = {
         "batch_size": args.train_batch_size,
-        "hidden_dim": 150,
+        "hidden_dim": 384,
         "dropout": 0.2,
         "embedding_type": "glove.6B.300d",
         "embedding_path": "../embeddings/glove.840B.300d.zip",
