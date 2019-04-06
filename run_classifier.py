@@ -99,7 +99,7 @@ class DataProcessor(object):
     @classmethod
     def _read_tsv(cls, input_file, quotechar=None):
         """Reads a tab separated value file."""
-        with open(input_file, "r") as f:
+        with open(input_file, "r", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
             lines = []
             for line in reader:
@@ -890,7 +890,7 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
-                if global_step % 2 == 0 and global_step > 0:
+                if global_step % 1 == 0 and global_step > 0:
                     eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
                          task_name)
 
@@ -927,6 +927,8 @@ def main():
 
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name):
     eval_examples = processor.get_dev_examples(args.data_dir)
+    remainder = len(eval_examples) % args.train_batch_size
+    eval_examples = eval_examples[: -remainder]
     lstm_eval_feas = [item.text_a for item in eval_examples]
     eval_features = convert_examples_to_features(
         eval_examples, label_list, args.max_seq_length, tokenizer, output_mode)
