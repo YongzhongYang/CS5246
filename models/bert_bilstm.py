@@ -18,17 +18,6 @@ from allennlp.modules.elmo import Elmo
 options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
 weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
 
-# Compute two different representation for each token.
-# Each representation is a linear weighted combination for the
-# 3 layers in ELMo (i.e., charcnn, the outputs of the two BiLSTM))
-
-
-# use batch_to_ids to convert sentences to character ids
-sentences = [['First', 'sentence', '.'], ['Another', '.']]
-character_ids = batch_to_ids(sentences)
-
-embeddings = elmo(character_ids)
-
 class BERT_BiLSTM(nn.Module):
     def __init__(self, lstm_opt, bert_opt, variant='bert-base-uncased'):
         super(BERT_BiLSTM, self).__init__()
