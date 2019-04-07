@@ -31,7 +31,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
-
+import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss, MSELoss
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import matthews_corrcoef, f1_score
@@ -938,6 +938,7 @@ def main():
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
          examples, max_eval_acc):
     remainder = len(examples) % args.train_batch_size
+    pad_size=args.train_batch_size-remainder
     #examples = examples[: -remainder]
     lstm_eval_feas = [item.text_a for item in examples]
     eval_features = convert_examples_to_features(
@@ -969,11 +970,12 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
-        while len(lstm_eval_sent)<args.train_batch_size:
-            last_batch=1
-            lstm_eval_sent=lstm_eval_sent.append(lstm_eval_sent[0])
         lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
-        
+        if lstm_eval_tensor.shape[0]<args.train_batch_size:
+            last_batch=1
+            lstm_eval_tensor = F.pad(input=lstm_eval_tensor, pad=(0, 0,0,pad_size), mode='constant', value=0)
+            
+
         with torch.no_grad():
             # logits = model(input_ids, segment_ids, input_mask, labels=None)
             logits = model(((input_ids, segment_ids), lstm_eval_tensor))
