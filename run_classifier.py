@@ -843,7 +843,8 @@ def main():
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
         all_label_ids = all_label_ids.to(device)
-        lstm_train_feas = [item.text_a for item in train_examples]
+        #lstm_train_feas = [item.text_a for item in train_examples]
+        lstm_train_feas = batch_to_ids([item.text_a for item in train_examples])
 #        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
 #            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
@@ -863,7 +864,8 @@ def main():
                 input_ids, input_mask, segment_ids, label_ids, lstm_train_sent = batch
                 #text_fields = lstm_opt['text_fields']
                 #lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
-                lstm_train_tensor = batch_to_ids(lstm_train_sent)
+                #lstm_train_tensor = batch_to_ids(lstm_train_sent)
+                lstm_train_tensor = lstm_train_sent
 
                 # define a new function to compute loss values for both output_modes
                 # logits = model(input_ids, segment_ids, input_mask, labels=None)
@@ -901,7 +903,7 @@ def main():
                     global_step += 1
                 if global_step % 50 == 0 and global_step > 0:
                     eval_examples = processor.get_dev_examples(args.data_dir)
-                    max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
+                    max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, device,
                          task_name, eval_examples, max_eval_acc)
                     model.train()
 
@@ -910,8 +912,8 @@ def main():
         output_model_file = os.path.join(args.output_dir, WEIGHTS_NAME)
         torch.save(model_to_save.state_dict(), output_model_file)
         output_config_file = os.path.join(args.output_dir, CONFIG_NAME)
-        del lstm_opt['text_fields']
-        del lstm_opt['label_fields']
+        #del lstm_opt['text_fields']
+        #del lstm_opt['label_fields']
         config = {
             'bert': bert_opt,
             'lstm': lstm_opt
@@ -921,7 +923,7 @@ def main():
             # f.write(model_to_save.config.to_json_string())
         # test_examples = processor.get_test_examples(args.data_dir)
         eval_examples = processor.get_dev_examples(args.data_dir)
-        eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
+        eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, device,
              task_name, eval_examples, max_eval_acc)
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
@@ -940,7 +942,7 @@ def main():
     #    eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
 
 
-def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
+def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, device, task_name,
          examples, max_eval_acc):
     remainder = len(examples) % args.train_batch_size
     examples = examples[: -remainder]
@@ -974,7 +976,8 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
-        lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
+        #lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
+        lstm_eval_tensor=batch_to_ids(lstm_eval_sent)
         with torch.no_grad():
             # logits = model(input_ids, segment_ids, input_mask, labels=None)
             logits = model(((input_ids, segment_ids), lstm_eval_tensor))
