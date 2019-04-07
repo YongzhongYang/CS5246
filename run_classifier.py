@@ -825,7 +825,7 @@ def main():
     args.eval_batch_size = args.train_batch_size
     if args.do_train:
         remainder = len(train_examples) % args.train_batch_size
-        train_examples = train_examples[:-remainder]
+        #train_examples = train_examples[:-remainder]
         train_features = convert_examples_to_features(
             train_examples, label_list, args.max_seq_length, tokenizer, output_mode)
         logger.info("***** Running training *****")
@@ -938,7 +938,7 @@ def main():
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
          examples, max_eval_acc):
     remainder = len(examples) % args.train_batch_size
-    examples = examples[: -remainder]
+    #examples = examples[: -remainder]
     lstm_eval_feas = [item.text_a for item in examples]
     eval_features = convert_examples_to_features(
         examples, label_list, args.max_seq_length, tokenizer, output_mode)

@@ -55,9 +55,9 @@ class BERT_BiLSTM(nn.Module):
         lstm_inputs = lstm_inputs.to(self.device)
         _, pooled_output = self.bert(text_bert_indices, bert_segments_ids, output_all_encoded_layers=False)
         pooled_output = self.bert_dropout(pooled_output)
-
-        lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
-        lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
+        lstm_x = self.embeddings(lstm_inputs)
+        #lstm_x=lstm_x.view(len(lstm_inputs), self.batch_size, -1)
+        lstm_y, self.hidden = self.bilstm(lstm_x)
 
         y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
         log_probs = F.log_softmax(y)
