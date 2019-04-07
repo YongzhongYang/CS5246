@@ -915,8 +915,9 @@ def main():
         # f.write(model_to_save.config.to_json_string())
         # test_examples = processor.get_test_examples(args.data_dir)
         eval_examples = processor.get_dev_examples(args.data_dir)
-        eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-             task_name, eval_examples, max_eval_acc)
+        max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
+             task_name, eval_examples, max_eval_acc, eval_examples, max_eval_acc)
+        print('max dev acc achieved during training {}'.format(max_eval_acc))
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
         # model = BertForSequenceClassification(config, num_labels=num_labels)
