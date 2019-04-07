@@ -912,9 +912,7 @@ def main():
             'bert': bert_opt,
             'lstm': lstm_opt
         }
-        with open(output_config_file, 'w') as f:
-            f.write(json.dumps(config))
-            # f.write(model_to_save.config.to_json_string())
+        # f.write(model_to_save.config.to_json_string())
         # test_examples = processor.get_test_examples(args.data_dir)
         eval_examples = processor.get_dev_examples(args.data_dir)
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
@@ -938,8 +936,9 @@ def main():
 
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
          examples, max_eval_acc):
-    remainder = len(examples) % args.train_batch_size
-    examples = examples[: -remainder]
+    # TODO: fix the batching problem, so no samples are removed
+    # remainder = len(examples) % args.train_batch_size
+    # examples = examples[: -remainder]
     lstm_eval_feas = [item.text_a for item in examples]
     eval_features = convert_examples_to_features(
         examples, label_list, args.max_seq_length, tokenizer, output_mode)
@@ -967,14 +966,21 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
 
     for input_ids, input_mask, segment_ids, label_ids, lstm_eval_sent in tqdm(eval_dataloader, desc="Evaluating"):
         input_ids = input_ids.to(device)
-        input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
         lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
+        tensor_width = lstm_eval_tensor.size()[0]
+        padded_num = args.train_batch_size - lstm_eval_tensor.size()[1]
+        if lstm_eval_tensor.size()[1] < args.train_batch_size:
+            lstm_eval_tensor = torch.cat([lstm_eval_tensor,
+                                          torch.zeros(tensor_width, padded_num).long()], dim=1)
+            input_ids = torch.cat([input_ids, torch.zeros(padded_num, tensor_width).long()], dim=0)
+            segment_ids = torch.cat([segment_ids, torch.zeros(padded_num, tensor_width).long()], dim=0)
         with torch.no_grad():
             # logits = model(input_ids, segment_ids, input_mask, labels=None)
             logits = model(((input_ids, segment_ids), lstm_eval_tensor))
-
+        if padded_num > 0:
+            logits = logits[:-padded_num, :]
         # create eval loss and other metric required by the task
         if output_mode == "classification":
             loss_fct = CrossEntropyLoss()
