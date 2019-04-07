@@ -971,17 +971,17 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
         lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
-        if lstm_eval_tensor.shape[0]<args.train_batch_size:
+        if lstm_eval_tensor.shape[1]<args.train_batch_size:
             last_batch=1
-            lstm_eval_tensor = F.pad(input=lstm_eval_tensor, pad=(0, 0,0,pad_size), mode='constant', value=0)
-            
+            input_ids = F.pad(input=input_ids, pad=(0,0,0,pad_size), mode='constant', value=0)
+            segment_ids = F.pad(input=segment_ids, pad=(0,0,0,pad_size), mode='constant', value=0)
+            lstm_eval_tensor = F.pad(input=lstm_eval_tensor, pad=(0,pad_size,0,0), mode='constant', value=0)
 
         with torch.no_grad():
             # logits = model(input_ids, segment_ids, input_mask, labels=None)
             logits = model(((input_ids, segment_ids), lstm_eval_tensor))
         if last_batch:
             logits=logits[:remainder]
-
         # create eval loss and other metric required by the task
         if output_mode == "classification":
             loss_fct = CrossEntropyLoss()
