@@ -938,7 +938,7 @@ def main():
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
          examples, max_eval_acc):
     remainder = len(examples) % args.train_batch_size
-    examples = examples[: -remainder]
+    #examples = examples[: -remainder]
     lstm_eval_feas = [item.text_a for item in examples]
     eval_features = convert_examples_to_features(
         examples, label_list, args.max_seq_length, tokenizer, output_mode)
@@ -963,16 +963,22 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
     eval_loss = 0
     nb_eval_steps = 0
     preds = []
-
+    last_batch=0
     for input_ids, input_mask, segment_ids, label_ids, lstm_eval_sent in tqdm(eval_dataloader, desc="Evaluating"):
         input_ids = input_ids.to(device)
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
+        while len(lstm_eval_sent)<args.train_batch_size:
+            last_batch=1
+            lstm_eval_sent=lstm_eval_sent.append(lstm_eval_sent[0])
         lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
+        
         with torch.no_grad():
             # logits = model(input_ids, segment_ids, input_mask, labels=None)
             logits = model(((input_ids, segment_ids), lstm_eval_tensor))
+        if last_batch:
+            logits=logits[:remainder]
 
         # create eval loss and other metric required by the task
         if output_mode == "classification":
