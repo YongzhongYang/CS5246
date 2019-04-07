@@ -44,7 +44,10 @@ from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 from dataloader.bert_lstm_dataset import BertLstmDataset, load_embeddings, sample_data
 from models.bert_bilstm import BERT_BiLSTM
 
-from allennlp.modules.elmo import batch_to_ids
+from allennlp.modules.elmo import batch_to_ids,Elmo
+
+options_file = "elmo/elmo_2x1024_128_2048cnn_1xhighway_options.json"
+weight_file = "elmo/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -845,6 +848,8 @@ def main():
         all_label_ids = all_label_ids.to(device)
         #lstm_train_feas = [item.text_a for item in train_examples]
         lstm_train_feas = batch_to_ids([item.text_a for item in train_examples])
+        elmo = Elmo(options_file, weight_file, 1, dropout=0)
+        lstm_train_feas = elmo(lstm_train_feas)
 #        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
 #            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)

@@ -12,11 +12,11 @@ import torch.nn.functional as F
 from pytorch_pretrained_bert import BertModel, BertForSequenceClassification, BertForNextSentencePrediction, \
     BertForPreTraining
 
-#elmo
-from allennlp.modules.elmo import Elmo
+# #elmo
+# from allennlp.modules.elmo import Elmo
 
-options_file = "elmo/elmo_2x1024_128_2048cnn_1xhighway_options.json"
-weight_file = "elmo/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
+# options_file = "elmo/elmo_2x1024_128_2048cnn_1xhighway_options.json"
+# weight_file = "elmo/elmo_2x1024_128_2048cnn_1xhighway_weights.hdf5"
 #options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
 #weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
 #elmo = Elmo(options_file, weight_file, 1, dropout=0)
@@ -33,7 +33,7 @@ class BERT_BiLSTM(nn.Module):
         self.batch_size = lstm_opt['batch_size']
         self.hidden_dim = lstm_opt['hidden_dim']
         self.lstm_dropout = lstm_opt['dropout']
-        self.elmo = Elmo(options_file, weight_file, 1, dropout=0)
+        #self.elmo = Elmo(options_file, weight_file, 1, dropout=0)
         # text_fields, label_fields = self.load_embeddings(lstm_opt)
         #text_fields, label_fields = lstm_opt['text_fields'], lstm_opt['label_fields']
         #self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
@@ -68,7 +68,9 @@ class BERT_BiLSTM(nn.Module):
         #lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
         #print(self.elmo(lstm_inputs)['elmo_representations'][0].shape)
         #print(self.elmo(lstm_inputs)['elmo_representations'][0].view(len(lstm_inputs), self.batch_size, -1).shape)
-        lstm_x = self.elmo(lstm_inputs)['elmo_representations'][0].permute(1,0,2)
+        #sentence length * batch * embeding
+        #lstm_x = self.elmo(lstm_inputs)['elmo_representations'][0].permute(1,0,2)
+        lstm_x = lstm_inputs.permute(1,0,2)
         lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
 
         y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
