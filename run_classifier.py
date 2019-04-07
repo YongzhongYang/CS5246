@@ -901,11 +901,12 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
-                if global_step % 1000 == 0 and global_step > 0:
+                if global_step % 400 == 0 and global_step > 0:
                     eval_examples = processor.get_dev_examples(args.data_dir)
                     max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, device,
                          task_name, eval_examples, max_eval_acc)
                     model.train()
+                torch.cuda.empty_cache()
 
         # Save a trained model and the associated configuration
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
