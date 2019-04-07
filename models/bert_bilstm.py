@@ -12,6 +12,22 @@ import torch.nn.functional as F
 from pytorch_pretrained_bert import BertModel, BertForSequenceClassification, BertForNextSentencePrediction, \
     BertForPreTraining
 
+#elmo
+from allennlp.modules.elmo import Elmo
+
+options_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
+weight_file = "https://s3-us-west-2.amazonaws.com/allennlp/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
+
+# Compute two different representation for each token.
+# Each representation is a linear weighted combination for the
+# 3 layers in ELMo (i.e., charcnn, the outputs of the two BiLSTM))
+
+
+# use batch_to_ids to convert sentences to character ids
+sentences = [['First', 'sentence', '.'], ['Another', '.']]
+character_ids = batch_to_ids(sentences)
+
+embeddings = elmo(character_ids)
 
 class BERT_BiLSTM(nn.Module):
     def __init__(self, lstm_opt, bert_opt, variant='bert-base-uncased'):
@@ -20,16 +36,17 @@ class BERT_BiLSTM(nn.Module):
         # BERT layers
         self.bert = BertModel.from_pretrained(variant)
         self.bert_dropout = nn.Dropout(bert_opt["dropout"])
-
+        self.elmo = Elmo(options_file, weight_file, 2, dropout=0)
         # LSTM layers
         self.use_gpu = lstm_opt['use_gpu']
         self.batch_size = lstm_opt['batch_size']
         self.hidden_dim = lstm_opt['hidden_dim']
         self.lstm_dropout = lstm_opt['dropout']
         # text_fields, label_fields = self.load_embeddings(lstm_opt)
-        text_fields, label_fields = lstm_opt['text_fields'], lstm_opt['label_fields']
-        self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
-        self.bilstm = nn.LSTM(input_size=text_fields.vocab.vectors.size()[1],
+        #text_fields, label_fields = lstm_opt['text_fields'], lstm_opt['label_fields']
+        #self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
+        #self.bilstm = nn.LSTM(input_size=text_fields.vocab.vectors.size()[1],
+        self.bilstm = nn.LSTM(input_size=1024,
                               hidden_size=lstm_opt['hidden_dim'], bidirectional=True)
         self.hidden = self.init_hidden()
 
@@ -56,7 +73,8 @@ class BERT_BiLSTM(nn.Module):
         _, pooled_output = self.bert(text_bert_indices, bert_segments_ids, output_all_encoded_layers=False)
         pooled_output = self.bert_dropout(pooled_output)
 
-        lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
+        #lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
+        lstm_x = self.elmo(lstm_inputs).permute(0,2,1)
         lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
 
         y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))

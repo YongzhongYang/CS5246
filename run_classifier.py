@@ -44,6 +44,8 @@ from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 from dataloader.bert_lstm_dataset import BertLstmDataset, load_embeddings, sample_data
 from models.bert_bilstm import BERT_BiLSTM
 
+from allennlp.modules.elmo import batch_to_ids
+
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
@@ -773,7 +775,7 @@ def main():
     lstm_opt["batch_size"] = args.train_batch_size
     lstm_opt["use_gpu"] = device != "cpu"
     lstm_opt["max_len"] = args.max_seq_length
-    lstm_opt['text_fields'], lstm_opt['label_fields'] = load_embeddings(lstm_opt)
+    #lstm_opt['text_fields'], lstm_opt['label_fields'] = load_embeddings(lstm_opt)
     model = BERT_BiLSTM(lstm_opt, bert_opt)
 
     if args.fp16:
@@ -859,8 +861,9 @@ def main():
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 # batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids, lstm_train_sent = batch
-                text_fields = lstm_opt['text_fields']
-                lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
+                #text_fields = lstm_opt['text_fields']
+                #lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
+                lstm_train_tensor = batch_to_ids(lstm_train_sent)
 
                 # define a new function to compute loss values for both output_modes
                 # logits = model(input_ids, segment_ids, input_mask, labels=None)
@@ -907,6 +910,8 @@ def main():
         output_model_file = os.path.join(args.output_dir, WEIGHTS_NAME)
         torch.save(model_to_save.state_dict(), output_model_file)
         output_config_file = os.path.join(args.output_dir, CONFIG_NAME)
+        del lstm_opt['text_fields']
+        del lstm_opt['label_fields']
         config = {
             'bert': bert_opt,
             'lstm': lstm_opt
@@ -930,9 +935,9 @@ def main():
         model = BERT_BiLSTM(config_obj['lstm'], config_obj['bert'])
     model.to(device)
 
-    if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
+    #if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
         # certain times for every epoch as well
-        eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
+    #    eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
 
 
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
