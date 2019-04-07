@@ -849,7 +849,7 @@ def main():
         #lstm_train_feas = [item.text_a for item in train_examples]
         lstm_train_feas = batch_to_ids([item.text_a for item in train_examples])
         elmo = Elmo(options_file, weight_file, 1, dropout=0)
-        lstm_train_feas = elmo(lstm_train_feas)
+        #lstm_train_feas = elmo(lstm_train_feas)
 #        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
 #            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
@@ -870,7 +870,7 @@ def main():
                 #text_fields = lstm_opt['text_fields']
                 #lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
                 #lstm_train_tensor = batch_to_ids(lstm_train_sent)
-                lstm_train_tensor = lstm_train_sent
+                lstm_train_tensor = elmo(lstm_train_sent)['elmo_representations'][0]
 
                 # define a new function to compute loss values for both output_modes
                 # logits = model(input_ids, segment_ids, input_mask, labels=None)
