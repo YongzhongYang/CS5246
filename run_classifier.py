@@ -31,7 +31,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
-
+import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss, MSELoss
 from scipy.stats import pearsonr, spearmanr
 from sklearn.metrics import matthews_corrcoef, f1_score
@@ -938,7 +938,8 @@ def main():
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
          examples, max_eval_acc):
     remainder = len(examples) % args.train_batch_size
-    examples = examples[: -remainder]
+    pad_size=args.train_batch_size-remainder
+    #examples = examples[: -remainder]
     lstm_eval_feas = [item.text_a for item in examples]
     eval_features = convert_examples_to_features(
         examples, label_list, args.max_seq_length, tokenizer, output_mode)
@@ -963,17 +964,24 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
     eval_loss = 0
     nb_eval_steps = 0
     preds = []
-
+    last_batch=0
     for input_ids, input_mask, segment_ids, label_ids, lstm_eval_sent in tqdm(eval_dataloader, desc="Evaluating"):
         input_ids = input_ids.to(device)
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
         lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
+        if lstm_eval_tensor.shape[1]<args.train_batch_size:
+            last_batch=1
+            input_ids = F.pad(input=input_ids, pad=(0,0,0,pad_size), mode='constant', value=0)
+            segment_ids = F.pad(input=segment_ids, pad=(0,0,0,pad_size), mode='constant', value=0)
+            lstm_eval_tensor = F.pad(input=lstm_eval_tensor, pad=(0,pad_size,0,0), mode='constant', value=0)
+
         with torch.no_grad():
             # logits = model(input_ids, segment_ids, input_mask, labels=None)
             logits = model(((input_ids, segment_ids), lstm_eval_tensor))
-
+        if last_batch:
+            logits=logits[:remainder]
         # create eval loss and other metric required by the task
         if output_mode == "classification":
             loss_fct = CrossEntropyLoss()
