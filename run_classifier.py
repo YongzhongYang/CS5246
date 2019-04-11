@@ -840,16 +840,18 @@ def main():
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
         elif output_mode == "regression":
             all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.float)
-        all_label_ids = all_label_ids.to(device)
-        lstm_train_feas = [item.text_a for item in train_examples]
+        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+        # all_label_ids = all_label_ids.to(device)
+        # lstm_train_feas = [item.text_a for item in train_examples]
 #        all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas = sample_data(
 #            all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
-        train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
+        # train_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_train_feas)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
+
 
         model.train()
         model.to(device)
@@ -857,10 +859,11 @@ def main():
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
-                # batch = tuple(t.to(device) for t in batch)
-                input_ids, input_mask, segment_ids, label_ids, lstm_train_sent = batch
-                text_fields = lstm_opt['text_fields']
-                lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
+                batch = tuple(t.to(device) for t in batch)
+                input_ids, input_mask, segment_ids, label_ids = batch
+                # input_ids, input_mask, segment_ids, label_ids, lstm_train_sent = batch
+                # text_fields = lstm_opt['text_fields']
+                # lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
 
                 # define a new function to compute loss values for both output_modes
                 logits = model(input_ids, segment_ids, input_mask, labels=None)
