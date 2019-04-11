@@ -823,6 +823,8 @@ def main():
     tr_loss = 0
     max_eval_acc = 0
     args.eval_batch_size = args.train_batch_size
+    eval_loss = []
+    eval_acc = []
     if args.do_train:
         remainder = len(train_examples) % args.train_batch_size
         train_examples = train_examples[:-remainder]
@@ -900,7 +902,7 @@ def main():
                 if global_step % 50 == 0 and global_step > 0:
                     eval_examples = processor.get_dev_examples(args.data_dir)
                     max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-                         task_name, eval_examples, max_eval_acc)
+                         task_name, eval_examples, max_eval_acc, eval_loss, eval_acc)
                     model.train()
 
         # Save a trained model and the associated configuration
@@ -916,7 +918,7 @@ def main():
         # test_examples = processor.get_test_examples(args.data_dir)
         eval_examples = processor.get_dev_examples(args.data_dir)
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
-             task_name, eval_examples, max_eval_acc)
+             task_name, eval_examples, max_eval_acc, eval_loss, eval_acc)
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
         # model = BertForSequenceClassification(config, num_labels=num_labels)
@@ -935,7 +937,7 @@ def main():
 
 
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
-         examples, max_eval_acc):
+         examples, max_eval_acc, eval_loss, eval_acc, eval_all_loss, eval_all_acc):
     # TODO: fix the batching problem, so no samples are removed
     # remainder = len(examples) % args.train_batch_size
     # examples = examples[: -remainder]
@@ -974,8 +976,8 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
         if lstm_eval_tensor.size()[1] < args.train_batch_size:
             lstm_eval_tensor = torch.cat([lstm_eval_tensor,
                                           torch.zeros(tensor_width, padded_num).long()], dim=1)
-            input_ids = torch.cat([input_ids, torch.zeros(padded_num, tensor_width).long()], dim=0)
-            segment_ids = torch.cat([segment_ids, torch.zeros(padded_num, tensor_width).long()], dim=0)
+            input_ids = torch.cat([input_ids, torch.zeros(padded_num, tensor_width).long().to(device)], dim=0)
+            segment_ids = torch.cat([segment_ids, torch.zeros(padded_num, tensor_width).long().to(device)], dim=0)
         with torch.no_grad():
             # logits = model(input_ids, segment_ids, input_mask, labels=None)
             logits = model(((input_ids, segment_ids), lstm_eval_tensor))
@@ -1004,13 +1006,14 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
     elif output_mode == "regression":
         preds = np.squeeze(preds)
     result = compute_metrics(task_name, preds, all_label_ids.numpy())
-
     result['eval_loss'] = eval_loss
     # result['global_step'] = global_step
     # result['loss'] = loss
     logger.info("***** Eval results *****")
     for key in sorted(result.keys()):
         logger.info("  %s = %s", key, str(result[key]))
+    eval_all_loss.append(eval_loss)
+    eval_all_acc.append(result['acc'])
     return max_eval_acc if max_eval_acc >= result['acc'] else result['acc']
 
 
