@@ -28,7 +28,7 @@ class BERT_BiLSTM(nn.Module):
         self.convs = nn.ModuleList([
                                     nn.Conv1d(in_channels = 300, 
                                               out_channels = n_filters, 
-                                              kernel_size = fs
+                                              kernel_size = fs)
                                     for fs in filter_sizes
                                     ])
         # text_fields, label_fields = self.load_embeddings(lstm_opt)
