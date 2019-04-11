@@ -766,15 +766,15 @@ def main():
             num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
     # Prepare model
     cache_dir = args.cache_dir if args.cache_dir else os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
-    # model = BertForSequenceClassification.from_pretrained(args.bert_model,
-    #           cache_dir=cache_dir,
-    #           num_labels=num_labels)
+    model = BertForSequenceClassification.from_pretrained(args.bert_model,
+              cache_dir=cache_dir,
+              num_labels=num_labels)
 
     lstm_opt["batch_size"] = args.train_batch_size
     lstm_opt["use_gpu"] = device != "cpu"
     lstm_opt["max_len"] = args.max_seq_length
     lstm_opt['text_fields'], lstm_opt['label_fields'] = load_embeddings(lstm_opt)
-    model = BERT_BiLSTM(lstm_opt, bert_opt)
+    #model = BERT_BiLSTM(lstm_opt, bert_opt)
 
     if args.fp16:
         model.half()
@@ -863,8 +863,8 @@ def main():
                 lstm_train_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_train_sent])
 
                 # define a new function to compute loss values for both output_modes
-                # logits = model(input_ids, segment_ids, input_mask, labels=None)
-                logits = model(((input_ids, segment_ids),lstm_train_tensor))
+                logits = model(input_ids, segment_ids, input_mask, labels=None)
+                #logits = model(((input_ids, segment_ids),lstm_train_tensor))
                 if output_mode == "classification":
                     loss_fct = CrossEntropyLoss()
                     loss = loss_fct(logits.view(-1, num_labels), label_ids.view(-1))
