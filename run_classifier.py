@@ -920,6 +920,8 @@ def main():
         max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
              task_name, eval_examples, max_eval_acc, eval_examples, max_eval_acc, eval_loss, eval_acc)
         print('max dev acc achieved during training {}'.format(max_eval_acc))
+        saveFile("val_loss.txt", eval_loss)
+        saveFile("val_acc.txt", eval_acc)
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
         # model = BertForSequenceClassification(config, num_labels=num_labels)
@@ -935,6 +937,13 @@ def main():
     if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
         # certain times for every epoch as well
         eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
+
+
+def saveFile(filePath, data):
+    with open(filePath, "w") as f:
+        for point in data:
+            f.write(point)
+            f.write("\n")
 
 
 def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
