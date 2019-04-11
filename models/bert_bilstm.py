@@ -26,11 +26,18 @@ class BERT_BiLSTM(nn.Module):
         self.batch_size = lstm_opt['batch_size']
         self.hidden_dim = lstm_opt['hidden_dim']
         self.convs = nn.ModuleList([
-                                    nn.Conv1d(in_channels = 300, 
-                                              out_channels = n_filters, 
-                                              kernel_size = fs)
-                                    for fs in filter_sizes
-                                    ])
+            nn.Sequential(
+	                nn.Conv1d(in_channels=300, #400*300
+	                    out_channels=n_filters,
+		                    kernel_size=fs,
+	                    stride=1,
+	                    padding=fs-1
+	                    ),
+	                nn.ReLU(),
+	                nn.MaxPool1d(kernel_size=400+fs-1)  
+	            )
+                for fs in filter_sizes
+        ])
         # text_fields, label_fields = self.load_embeddings(lstm_opt)
         text_fields, label_fields = lstm_opt['text_fields'], lstm_opt['label_fields']
         self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
@@ -54,14 +61,13 @@ class BERT_BiLSTM(nn.Module):
         embed = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
         embed=embed.permute(1,0,2)
         conved = [F.relu(conv(embed)) for conv in self.convs]
-        pooled = [F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
-        cat = self.dropout(torch.cat(pooled, dim = 1))
+        cat = torch.cat(conved, dim = 1)
+        cat = cat.view(cat.size(0), -1)
 
         y = self.dense(torch.cat((pooled_output, self.fc(cat)), dim=1))
         log_probs = F.log_softmax(y)
         del embed
         del conved
-        del pooled
         del text_bert_indices
         del bert_segments_ids
         del pooled_output
