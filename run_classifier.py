@@ -901,7 +901,7 @@ def main():
                     global_step += 1
                 if global_step % 50 == 0 and global_step > 0:
                     eval_examples = processor.get_dev_examples(args.data_dir)
-                    max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
+                    max_eval_acc = eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, device,
                          task_name, eval_examples, max_eval_acc)
                     model.train()
 
@@ -919,7 +919,7 @@ def main():
             # f.write(model_to_save.config.to_json_string())
         # test_examples = processor.get_test_examples(args.data_dir)
         eval_examples = processor.get_dev_examples(args.data_dir)
-        eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device,
+        eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, device,
              task_name, eval_examples, max_eval_acc)
         # # Load a trained model and config that you have fine-tuned
         # config = BertConfig(output_config_file)
@@ -933,12 +933,12 @@ def main():
         model = BERT_BiLSTM(config_obj['lstm'], config_obj['bert'])
     model.to(device)
 
-    if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
-        # certain times for every epoch as well
-        eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
+    # if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
+    #     # certain times for every epoch as well
+    #     eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name)
 
 
-def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, text_fields, device, task_name,
+def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels, device, task_name,
          examples, max_eval_acc):
     remainder = len(examples) % args.train_batch_size
     examples = examples[: -remainder]
@@ -956,7 +956,8 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
         all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
     elif output_mode == "regression":
         all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.float)
-    eval_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_eval_feas)
+    eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+    #eval_data = BertLstmDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, lstm_eval_feas)
     # eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
     # Run prediction for full data
     eval_sampler = SequentialSampler(eval_data)
@@ -967,15 +968,15 @@ def eval(model, args, processor, tokenizer, output_mode, label_list, num_labels,
     nb_eval_steps = 0
     preds = []
 
-    for input_ids, input_mask, segment_ids, label_ids, lstm_eval_sent in tqdm(eval_dataloader, desc="Evaluating"):
+    for input_ids, input_mask, segment_ids, label_ids  in tqdm(eval_dataloader, desc="Evaluating"):
         input_ids = input_ids.to(device)
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
-        lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
+        #lstm_eval_tensor = text_fields.process([text_fields.preprocess(x) for x in lstm_eval_sent])
         with torch.no_grad():
-            # logits = model(input_ids, segment_ids, input_mask, labels=None)
-            logits = model(((input_ids, segment_ids), lstm_eval_tensor))
+            logits = model(input_ids, segment_ids, input_mask, labels=None)
+            # logits = model(((input_ids, segment_ids), lstm_eval_tensor))
 
         # create eval loss and other metric required by the task
         if output_mode == "classification":
