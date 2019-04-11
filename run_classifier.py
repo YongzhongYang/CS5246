@@ -774,8 +774,12 @@ def main():
     lstm_opt["use_gpu"] = device != "cpu"
     lstm_opt["max_len"] = args.max_seq_length
     lstm_opt['text_fields'], lstm_opt['label_fields'] = load_embeddings(lstm_opt)
-    model = BERT_BiLSTM(lstm_opt, bert_opt)
-
+    N_FILTERS = 500
+    FILTER_SIZES = [2,3,4,5]
+    OUTPUT_DIM = 1
+    DROPOUT = 0.5
+    model = BERT_BiLSTM(lstm_opt, bert_opt,N_FILTERS,FILTER_SIZES,OUTPUT_DIM,DROPOUT)
+    
     if args.fp16:
         model.half()
     model.to(device)
@@ -927,7 +931,7 @@ def main():
         output_config_file = os.path.join(args.output_dir, CONFIG_NAME)
         with open(output_config_file, 'r') as f:
             config_obj = json.loads(f.readline())
-        model = BERT_BiLSTM(config_obj['lstm'], config_obj['bert'])
+        model = BERT_BiLSTM(config_obj['lstm'], config_obj['bert'],N_FILTERS,FILTER_SIZES,OUTPUT_DIM,DROPOUT)
     model.to(device)
 
     if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):

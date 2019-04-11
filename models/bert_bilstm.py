@@ -14,7 +14,7 @@ from pytorch_pretrained_bert import BertModel, BertForSequenceClassification, Be
 
 
 class BERT_BiLSTM(nn.Module):
-    def __init__(self, lstm_opt, bert_opt, variant='bert-base-uncased'):
+    def __init__(self, lstm_opt, n_filters,filter_sizes,output_dim,dropout,bert_opt, variant='bert-base-uncased'):
         super(BERT_BiLSTM, self).__init__()
 
         # BERT layers
@@ -25,27 +25,21 @@ class BERT_BiLSTM(nn.Module):
         self.use_gpu = lstm_opt['use_gpu']
         self.batch_size = lstm_opt['batch_size']
         self.hidden_dim = lstm_opt['hidden_dim']
-        self.lstm_dropout = lstm_opt['dropout']
+        self.convs = nn.ModuleList([
+                                    nn.Conv2d(in_channels = 1, 
+                                              out_channels = n_filters, 
+                                              kernel_size = (fs, 300)) 
+                                    for fs in filter_sizes
+                                    ])
         # text_fields, label_fields = self.load_embeddings(lstm_opt)
         text_fields, label_fields = lstm_opt['text_fields'], lstm_opt['label_fields']
         self.embeddings = nn.Embedding.from_pretrained(text_fields.vocab.vectors)
-        self.bilstm = nn.LSTM(input_size=text_fields.vocab.vectors.size()[1],
-                              hidden_size=lstm_opt['hidden_dim'], bidirectional=True)
-        self.hidden = self.init_hidden()
+        self.fc = nn.Linear(len(filter_sizes) * n_filters, output_dim)
 
         # Linear layers
         self.dense = nn.Linear(bert_opt["bert_dim"] + lstm_opt['hidden_dim'] * 2, bert_opt["polarities_dim"])
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def init_hidden(self):
-        # first is the hidden h
-        # second is the cell c
-        if self.use_gpu:
-             return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()),
-                     Variable(torch.zeros(2, self.batch_size, self.hidden_dim).cuda()))
-        else:
-             return (Variable(torch.zeros(2, self.batch_size, self.hidden_dim)),
-                     Variable(torch.zeros(2, self.batch_size, self.hidden_dim)))
 
     def forward(self, inputs):
         bert_inputs, lstm_inputs = inputs
@@ -55,17 +49,21 @@ class BERT_BiLSTM(nn.Module):
         lstm_inputs = lstm_inputs.to(self.device)
         _, pooled_output = self.bert(text_bert_indices, bert_segments_ids, output_all_encoded_layers=False)
         pooled_output = self.bert_dropout(pooled_output)
+        
 
-        lstm_x = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
-        lstm_y, self.hidden = self.bilstm(lstm_x, self.hidden)
+        embed = self.embeddings(lstm_inputs).view(len(lstm_inputs), self.batch_size, -1)
+        embed=embed.permute(1,0,2)
+        conved = [F.relu(conv(embed)).squeeze(3) for conv in self.convs]
+        pooled = [F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
+        cat = self.dropout(torch.cat(pooled, dim = 1))
 
-        y = self.dense(torch.cat((pooled_output, lstm_y[-1]), dim=1))
+        y = self.dense(torch.cat((pooled_output, self.fc(cat)), dim=1))
         log_probs = F.log_softmax(y)
+        del embed
+        del conved
+        del pooled
         del text_bert_indices
         del bert_segments_ids
-        del lstm_inputs
         del pooled_output
-        del lstm_x
-        del lstm_y
         del y
         return log_probs
