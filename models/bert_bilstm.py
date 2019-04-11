@@ -14,7 +14,7 @@ from pytorch_pretrained_bert import BertModel, BertForSequenceClassification, Be
 
 
 class BERT_BiLSTM(nn.Module):
-    def __init__(self, lstm_opt, n_filters,filter_sizes,output_dim,dropout,bert_opt, variant='bert-base-uncased'):
+    def __init__(self, lstm_opt,bert_opt, n_filters,filter_sizes,output_dim,dropout, variant='bert-base-uncased'):
         super(BERT_BiLSTM, self).__init__()
 
         # BERT layers
