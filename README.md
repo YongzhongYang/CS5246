@@ -37,3 +37,8 @@ CNN Model could be run with the following code:
 ```shell
 python cnn_classification.py
 ```
+BERT + BiLSTM + GloVe embedding can be run with the following code:
+```shell
+git checkout bert-lstm-avg-output
+python --task_name SST-2   --do_train   --do_eval   --do_lower_case   --data_dir glue_data/SST-2/   --bert_model bert-base-uncased  --max_seq_length 128  --train_batch_size 16  --learning_rate 2e-5  --num_train_epochs 3.0  --output_dir /tmp/mrpc_output/
+```
